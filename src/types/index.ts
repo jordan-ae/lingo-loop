@@ -6,6 +6,7 @@ export interface User {
   name: string;
   role: UserRole;
   profileImage?: string;
+  password: string; //to be removed
 }
 
 export interface Tutor extends User {

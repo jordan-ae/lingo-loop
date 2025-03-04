@@ -28,12 +28,15 @@ const ProtectedRoute = ({
   
   if (user && !allowedRoles.includes(user.role)) {
     // Redirect based on role
-    if (user.role === 'student') {
-      return <Navigate to="/dashboard" />;
-    } else if (user.role === 'tutor') {
-      return <Navigate to="/tutor-dashboard" />;
-    } else if (user.role === 'admin') {
-      return <Navigate to="/admin-dashboard" />;
+    switch (user.role) {
+      case 'student':
+        return <Navigate to="/dashboard" />;
+      case 'tutor':
+        return <Navigate to="/tutor-dashboard" />;
+      case 'admin':
+        return <Navigate to="/admin-dashboard" />;
+      default:
+        return <Navigate to="/login" />;
     }
   }
   
