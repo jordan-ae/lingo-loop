@@ -8,6 +8,7 @@ import { UpcomingLessons } from '../../components/student/UpcomingLessons';
 import { ProgressSummary } from '../../components/student/ProgressSumary';
 import { RecommendedTutors } from '../../components/student/RecomendTutors';
 import { NotificationsList } from '../../components/student/NotificationsList';
+import { useUserStore } from '@/store/userStore';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -23,6 +24,7 @@ export const DashboardPage: React.FC = () => {
   } = useStudentStore();
   
   const { tutors, fetchTutors } = useTutorStore();
+  const userI = useUserStore(state => state.user);
   
   useEffect(() => {
     if (user) {
@@ -36,7 +38,7 @@ export const DashboardPage: React.FC = () => {
   return (
     <MainLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Welcome back, {userI?.firstName}!</h1>
         <p className="text-gray-600">Here's an overview of your language learning journey.</p>
       </div>
       

@@ -4,6 +4,7 @@ import { Mail, Lock, User, Facebook, LogIn } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthFormProps {
   type: 'login' | 'register';
@@ -12,24 +13,27 @@ interface AuthFormProps {
 interface FormData {
   email: string;
   password: string;
-  name?: string;
+  lastName: string;
+  firstName: string
 }
 
 export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
   const { login, register: registerUser, isLoading } = useAuthStore();
+
+  const navigate = useNavigate()
   
   const { register, handleSubmit } = useForm<FormData>();
   
   const onSubmit = async (data: FormData) => {
     if (type === 'login') {
-      const success = await login(data.email, data.password);
+      const success = await login(data.email, data.password, navigate);
       if (success) {
         console.log("Mande")
         return;
       }
     } else {
-      if (data.name) {
-        const success = await registerUser(data.email, data.password, data.name);
+      if (data.firstName) {
+        const success = await registerUser(data.email, data.password, data.firstName, data.lastName);
         if (success) {
 
           return;
@@ -59,7 +63,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
                   id="name"
                   type="text"
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  {...register('name', { required: 'Name is required' })} />
+                  {...register('firstName', { required: 'Name is required' })} />
               </div>
             </div>
           )}

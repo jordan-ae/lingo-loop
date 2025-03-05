@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { DashboardPage } from './pages/student/DashboardPage';
@@ -11,8 +11,6 @@ import TutorDashboardPage from './pages/tutor/TutorDashboardPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 
-
-// Protected Route Component
 const ProtectedRoute = ({ 
   children, 
   allowedRoles = ['student', 'tutor', 'admin'] 
@@ -20,14 +18,17 @@ const ProtectedRoute = ({
   children: React.ReactNode;
   allowedRoles?: string[];
 }) => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, isLoading } = useAuthStore();
+  
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
   
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
   }
   
   if (user && !allowedRoles.includes(user.role)) {
-    // Redirect based on role
     switch (user.role) {
       case 'student':
         return <Navigate to="/dashboard" />;
@@ -36,7 +37,7 @@ const ProtectedRoute = ({
       case 'admin':
         return <Navigate to="/admin-dashboard" />;
       default:
-        return <Navigate to="/login" />;
+        return <Navigate to="/tutors" />;
     }
   }
   
@@ -44,8 +45,12 @@ const ProtectedRoute = ({
 };
 
 function App() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, initializeAuth } = useAuthStore();
   
+  useEffect(() => {
+    initializeAuth();
+  }, []);
+
   return (
     <Router>
       <Routes>
