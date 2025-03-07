@@ -8,7 +8,8 @@ export interface User {
   name: string;
   role: UserRole;
   profileImage?: string;
-  password: string; //to be removed
+  password: string;
+  isActive: boolean
 }
 
 export interface Tutor extends User {

@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface AuthFormProps {
   type: 'login' | 'register';
+  role?: 'student' | 'tutor';
 }
 
 interface FormData {
@@ -17,25 +18,27 @@ interface FormData {
   firstName: string
 }
 
-export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
-  const { login, register: registerUser, isLoading } = useAuthStore();
-
-  const navigate = useNavigate()
+export const AuthForm: React.FC<AuthFormProps> = ({ type, role = 'student' }) => {
+  const { login, register: registerUser } = useAuthStore();
+  const navigate = useNavigate();
+  const [currentRole, setCurrentRole] = React.useState<'student' | 'tutor'>(role);
   
   const { register, handleSubmit } = useForm<FormData>();
   
+  const handleRoleChange = (newRole: 'student' | 'tutor') => {
+    setCurrentRole(newRole);
+  };
+
   const onSubmit = async (data: FormData) => {
     if (type === 'login') {
       const success = await login(data.email, data.password, navigate);
       if (success) {
-        console.log("Mande")
         return;
       }
     } else {
-      if (data.firstName) {
-        const success = await registerUser(data.email, data.password, data.firstName, data.lastName);
+      if (data) {
+        const success = await registerUser(data.email, data.password, data.firstName, data.lastName, currentRole, navigate);
         if (success) {
-
           return;
         }
       }
@@ -46,7 +49,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
     <><Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle className="text-center text-2xl">
-          {type === 'login' ? 'Sign In' : 'Create Account'}
+          {type === 'login' ? 'Sign In' : `Create ${currentRole === 'tutor' ? 'Tutor' : 'Student'} Account`}
         </CardTitle>
       </CardHeader>
 
@@ -117,7 +120,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={false}
             className="flex items-center gap-2 w-full cursor-pointer"
             onClick={handleSubmit(onSubmit)}
           >
@@ -157,7 +160,28 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
           </Button>
         </div>
       </div>
-    </CardContent><CardFooter className="flex justify-center">
+    </CardContent><CardFooter className="flex flex-col items-center gap-2">
+        {type === 'register' && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleRoleChange('student')}
+              className={`text-sm font-medium ${
+                currentRole === 'student' ? 'text-blue-600' : 'text-gray-600'
+              } hover:text-blue-500`}
+            >
+              Sign up as Student
+            </button>
+            <span className="text-gray-400">|</span>
+            <button
+              onClick={() => handleRoleChange('tutor')}
+              className={`text-sm font-medium ${
+                currentRole === 'tutor' ? 'text-blue-600' : 'text-gray-600'
+              } hover:text-blue-500`}
+            >
+              Sign up as Tutor
+            </button>
+          </div>
+        )}
         <p className="text-sm text-gray-600">
           {type === 'login' ? "Don't have an account? " : "Already have an account? "}
           <a

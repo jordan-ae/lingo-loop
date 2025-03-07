@@ -154,7 +154,7 @@ const mockTutors: Tutor[] = [
 export const useTutorStore = create<TutorState>((set, get) => ({
   tutors: [],
   filteredTutors: [],
-  isLoading: false,
+  isLoading: true,
   error: null,
   
   fetchTutors: async () => {

@@ -73,7 +73,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
                 <Link to="/" className="text-blue-600 font-bold text-xl">
-                  LinguaLearn
+                  LingoLoop
                 </Link>
               </div>
             </div>

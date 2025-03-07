@@ -11,7 +11,7 @@ interface AuthState {
   token: string | null;
   navigate: (role: string) => void;
   login: (email: string, password: string, navigate: any) => Promise<boolean>;
-  register: (email: string, password: string, firstName: string, lastName: string) => Promise<boolean>;
+  register: (email: string, password: string, firstName: string, lastName: string, role: string, navigate: any) => Promise<boolean>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<boolean>;
   resetPassword: (token: string, newPassword: string) => Promise<boolean>;
@@ -21,19 +21,20 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true,
   token: localStorage.getItem('token') || null,
 
   initializeAuth: () => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        // Add logic to fetch user data if needed
         set({ isAuthenticated: true, token });
       } catch (error) {
         console.error('Error initializing auth:', error);
         localStorage.removeItem('token');
         set({ isAuthenticated: false, token: null });
+      }finally{
+        set({isLoading: false})
       }
     }
   },
@@ -76,12 +77,12 @@ export const useAuthStore = create<AuthState>((set) => ({
           isLoading: false,
           token: data.token
         });
-        switch (data.user.role) {
+        switch (data.user.role.toLowerCase()) {
           case 'admin':
             navigate('/admin-dashboard');
             break;
-          case 'teacher':
-            navigate('/teacher-dashboard');
+          case 'tutor':
+            navigate('/tutor-dashboard');
             break;
           case 'student':
             navigate('/dashboard');
@@ -101,7 +102,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
   
-  register: async (email, password, firstName, lastName) => {
+  register: async (email, password, firstName, lastName, role, navigate) => {
     set({ isLoading: true });
     
     try {
@@ -110,13 +111,38 @@ export const useAuthStore = create<AuthState>((set) => ({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, firstName, lastName, role: 'student' }),
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          firstName, 
+          lastName, 
+          role,
+          isActive: false
+        }),
       });
-      console.log(email, password, firstName, lastName)
       
       if (response.ok) {
-        const user = await response.json();
-        set({ user, isAuthenticated: true, isLoading: false });
+        const res = await response.json();
+        const user = res.user
+        set({ user, isAuthenticated: true, isLoading: false, token: res.token });
+        
+        const userRole = res.user?.role || role;
+        console.log('Navigating with role:', userRole, user);
+        
+        switch (userRole.toLowerCase()) {
+          case 'admin':
+            navigate('/admin-dashboard');
+            break;
+          case 'tutor':
+            navigate('/tutor-application');
+            break;
+          case 'student':
+            navigate('/dashboard');
+            break;
+          default:
+            navigate('/tutors');
+        }
+        
         return true;
       }
       

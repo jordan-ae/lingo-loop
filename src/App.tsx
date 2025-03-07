@@ -11,6 +11,13 @@ import TutorDashboardPage from './pages/tutor/TutorDashboardPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 
+const ROLE_ROUTES = {
+  student: '/dashboard',
+  tutor: '/tutor-dashboard',
+  admin: '/admin-dashboard',
+  default: '/tutors'
+};
+
 const ProtectedRoute = ({ 
   children, 
   allowedRoles = ['student', 'tutor', 'admin'] 
@@ -18,58 +25,45 @@ const ProtectedRoute = ({
   children: React.ReactNode;
   allowedRoles?: string[];
 }) => {
-  const { isAuthenticated, user, isLoading } = useAuthStore();
-  
+  const { isAuthenticated, user, isLoading, initializeAuth } = useAuthStore();
+
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
   }
-  
+
   if (user && !allowedRoles.includes(user.role)) {
-    switch (user.role) {
-      case 'student':
-        return <Navigate to="/dashboard" />;
-      case 'tutor':
-        return <Navigate to="/tutor-dashboard" />;
-      case 'admin':
-        return <Navigate to="/admin-dashboard" />;
-      default:
-        return <Navigate to="/tutors" />;
+    let redirectPath = ROLE_ROUTES[user.role] || ROLE_ROUTES.default;
+
+    console.log(user, "strange")
+    
+    if (user.role === 'tutor') {
+      const isActive = user.isActive ?? false;
+      console.log(isActive)
+      redirectPath = isActive ? '/tutor-dashboard' : '/tutor-application';
     }
+    
+    return <Navigate to={redirectPath} />;
   }
   
   return <>{children}</>;
 };
 
 function App() {
-  const { isAuthenticated, user, initializeAuth } = useAuthStore();
-  
-  useEffect(() => {
-    initializeAuth();
-  }, []);
-
   return (
     <Router>
       <Routes>
         {/* Public Routes */}
         <Route 
           path="/" 
-          element={
-            isAuthenticated ? (
-              user?.role === 'student' ? (
-                <Navigate to="/dashboard" />
-              ) : user?.role === 'tutor' ? (
-                <Navigate to="/tutor-dashboard" />
-              ) : (
-                <Navigate to="/admin-dashboard" />
-              )
-            ) : (
-              <Navigate to="/login" />
-            )
-          } 
+          element={<TutorSearchPage />} 
         />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
