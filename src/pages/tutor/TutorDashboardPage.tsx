@@ -1,9 +1,34 @@
-import { Calendar } from "lucide-react";
+import { Calendar, CheckCircle } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import { useUserStore } from "@/store/userStore";
 
 
 export default function TutorDashboardPage() {
+  const user = useUserStore(state => state.user);
+
+  if (!user?.isVerified) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="bg-green-100 rounded-full p-4 inline-block mb-4">
+            <CheckCircle size={48} className="text-green-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Submitted!</h2>
+          <p className="text-gray-600 mb-6">
+            Thank you for applying to be a tutor. We'll review your application and get back to you soon.
+          </p>
+          <a 
+            href="mailto:support@lingoloop.io" 
+            className="text-blue-600 hover:text-blue-800 font-medium"
+          >
+            support@lingoloop.io
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Tutor Dashboard</h1>

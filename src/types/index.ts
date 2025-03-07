@@ -9,7 +9,8 @@ export interface User {
   role: UserRole;
   profileImage?: string;
   password: string;
-  isActive: boolean
+  isActive: boolean;
+  isVerified: boolean
 }
 
 export interface Tutor extends User {
@@ -142,4 +143,5 @@ export interface TutorApplication {
   reviewDate?: string;
   reviewedBy?: string;
   rejectionReason?: string;
+  document?: File;
 }

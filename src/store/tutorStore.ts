@@ -154,7 +154,7 @@ const mockTutors: Tutor[] = [
 export const useTutorStore = create<TutorState>((set, get) => ({
   tutors: [],
   filteredTutors: [],
-  isLoading: true,
+  isLoading: false,
   error: null,
   
   fetchTutors: async () => {
@@ -230,10 +230,24 @@ export const useTutorStore = create<TutorState>((set, get) => ({
   submitTutorApplication: async (application) => {
     set({ isLoading: true });
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    set({ isLoading: false });
-    return true;
+    try {
+      const response = await fetch('http://localhost:5000/api/tutors/apply', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(application),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit application');
+      }
+
+      set({ isLoading: false });
+      return true;
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'An unknown error occurred', isLoading: false });
+      return false;
+    }
   }
 }));

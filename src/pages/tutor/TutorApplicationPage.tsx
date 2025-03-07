@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { 
-  User, 
   Mail, 
   Phone, 
   MapPin, 
@@ -18,10 +17,12 @@ import { Language } from '../../types';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../../components/ui/card';
 import { MainLayout } from '../../components/layout/MainLayout';
 import { Button } from '../../components/ui/button';
+import { useUserStore } from '@/store/userStore';
 
 export const TutorApplicationPage: React.FC = () => {
   const navigate = useNavigate();
   const { submitTutorApplication, isLoading } = useTutorStore();
+  const user = useUserStore(state => state.user);
   
   const [languages, setLanguages] = useState<Language[]>([
     { name: '', proficiency: 'intermediate' }
@@ -50,6 +51,7 @@ export const TutorApplicationPage: React.FC = () => {
   
   const onSubmit = async (data: TutorApplicationData) => {
     const applicationData = {
+      userId: user?.id,
       ...data,
       languages
     };
@@ -68,20 +70,23 @@ export const TutorApplicationPage: React.FC = () => {
   
   if (isSubmitted) {
     return (
-      <MainLayout>
-        <div className="text-center py-12">
-          <div className="bg-green-100 rounded-full p-4 inline-block mb-4">
-            <CheckCircle size={48} className="text-green-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Submitted!</h2>
-          <p className="text-gray-600 mb-6">
-            Thank you for applying to be a tutor. We'll review your application and get back to you soon.
-          </p>
-          <Button onClick={() => navigate('/tutor-dashboard')} variant="default">
-            Go to Dashboard
-          </Button>
+      <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="bg-green-100 rounded-full p-4 inline-block mb-4">
+          <CheckCircle size={48} className="text-green-500" />
         </div>
-      </MainLayout>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Submitted!</h2>
+        <p className="text-gray-600 mb-6">
+          Thank you for applying to be a tutor. We'll review your application and get back to you soon.
+        </p>
+        <a 
+          href="mailto:support@lingoloop.io" 
+          className="text-blue-600 hover:text-blue-800 font-medium"
+        >
+          support@lingoloop.io
+        </a>
+      </div>
+    </div>
     );
   }
   
@@ -100,17 +105,6 @@ export const TutorApplicationPage: React.FC = () => {
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium text-gray-700">Full Name</label>
-                  <div className="relative">
-                    <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      className="w-full pl-10 pr-3 py-2 rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                      {...register('name', { required: 'Name is required' })}
-                    />
-                  </div>
-                </div>
-
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-gray-700">Email Address</label>
                   <div className="relative">

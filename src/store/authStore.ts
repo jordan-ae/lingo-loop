@@ -3,6 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { create } from 'zustand';
 import { User } from '../types';
+import { useUserStore } from './userStore';
 
 interface AuthState {
   user: User | null;
@@ -77,6 +78,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           isLoading: false,
           token: data.token
         });
+        useUserStore.getState().setUser(data.user);
         switch (data.user.role.toLowerCase()) {
           case 'admin':
             navigate('/admin-dashboard');
@@ -125,6 +127,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         const res = await response.json();
         const user = res.user
         set({ user, isAuthenticated: true, isLoading: false, token: res.token });
+        useUserStore.getState().setUser(user);
         
         const userRole = res.user?.role || role;
         console.log('Navigating with role:', userRole, user);
@@ -158,6 +161,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem('token');
     set({ user: null, isAuthenticated: false, token: null });
+    useUserStore.getState().clearUser();
   },
   
   forgotPassword: async (email) => {
