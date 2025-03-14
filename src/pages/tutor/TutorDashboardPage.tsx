@@ -2,12 +2,28 @@ import { Calendar, CheckCircle } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { useUserStore } from "@/store/userStore";
-
+import { useTutorStore } from "@/store/tutorStore";
+import { useEffect, useState } from "react";
+import { Tutor } from "@/types";
 
 export default function TutorDashboardPage() {
   const user = useUserStore(state => state.user);
+  const { getTutorById } = useTutorStore();
+  const [tutor, setTutor] = useState<Tutor | null>(null);
 
-  if (!user?.isVerified) {
+  useEffect(() => {
+    if (user?.id) {
+      const fetchTutor = async () => {
+        const tutorData = await getTutorById(user.id);
+        if (tutorData) {
+          setTutor(tutorData);
+        }
+      };
+      fetchTutor();
+    }
+  }, [user?.id, getTutorById]);
+
+  if (tutor?.status === "pending") {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

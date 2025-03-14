@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from 'react';
 import { 
   Users, 
@@ -13,11 +12,19 @@ import {
 import { MainLayout } from '../../components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { useAdminStore } from '../../store/adminStore';
+import { Tutor } from '@/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import TutorProfileView from '../tutor/TutorProfileView';
+
 
 export const AdminDashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const { tutors, fetchAllTutors, updateTutorStatus } = useAdminStore();
+  const [selectedApplication, setSelectedApplication] = useState<Tutor | null>(null);
+
+  console.log(selectedApplication)
   
-  // Mock data
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalTutors: 0,
@@ -28,41 +35,65 @@ export const AdminDashboardPage: React.FC = () => {
     reportedIssues: 0
   });
   
-  const [recentApplications, setRecentApplications] = useState([
-    {
-      id: '1',
-      name: 'David Johnson',
-      email: 'david@example.com',
-      languages: ['English', 'Spanish'],
-      submissionDate: '2023-05-05'
-    },
-    {
-      id: '2',
-      name: 'Sarah Williams',
-      email: 'sarah@example.com',
-      languages: ['French', 'German'],
-      submissionDate: '2023-05-04'
-    }
-  ]);
+  const [recentApplications, setRecentApplications] = useState<Tutor[]>([]);
   
   useEffect(() => {
-    // Simulate loading data
-    const timer = setTimeout(() => {
-      setStats({
-        totalUsers: 1250,
-        totalTutors: 120,
-        totalStudents: 1130,
-        totalLessons: 3450,
-        totalRevenue: 86250,
-        pendingApplications: 15,
-        reportedIssues: 8
-      });
-      setIsLoading(false);
-    }, 1000);
+    const loadData = async () => {
+      try {
+        await fetchAllTutors();
+
+        const applications = tutors.filter(tutor => tutor.tutorProfile.status === 'pending');
+
+        console.log(applications)
+        
+        setRecentApplications(applications);
+        
+        const timer = setTimeout(() => {
+          setStats({
+            totalUsers: 1250,
+            totalTutors: tutors.length,
+            totalStudents: 1130,
+            totalLessons: 3450,
+            totalRevenue: 86250,
+            pendingApplications: tutors.filter(t => t.tutorProfile.status === 'pending').length,
+            reportedIssues: 8
+          });
+          setIsLoading(false);
+        }, 1000);
+        
+        return () => clearTimeout(timer);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        setIsLoading(false);
+      }
+    };
     
-    return () => clearTimeout(timer);
-  }, []);
+    loadData();
+  }, [fetchAllTutors, tutors]);
   
+  const handleReviewClick = (application: Tutor) => {
+    setSelectedApplication(application);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedApplication(null);
+  };
+
+  const handleStatusUpdate = async (tutorId: string, status: 'approved' | 'rejected') => {
+    try {
+      await updateTutorStatus(tutorId, status);
+      // Refresh the applications list
+      const applications = tutors.filter(tutor => tutor.tutorProfile.status === 'pending');
+      setRecentApplications(applications);
+      // Close modal if open
+      if (selectedApplication?._id === tutorId) {
+        setSelectedApplication(null);
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="mb-6">
@@ -176,23 +207,15 @@ export const AdminDashboardPage: React.FC = () => {
                       <div key={application.id} className="border rounded-md p-4 hover:bg-gray-50 transition-colors">
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <h4 className="font-medium">{application.name}</h4>
+                            <h4 className="font-medium">{application.firstName}</h4>
                             <p className="text-sm text-gray-500">{application.email}</p>
                           </div>
-                          <span className="text-sm text-blue-600 font-medium">
-                            {application.submissionDate}
+                          <span className={`text-sm font-medium ${
+                            application.tutorProfile.status === 'pending' ? 'text-yellow-600' : 
+                            application.tutorProfile.status === 'approved' ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {application.tutorProfile.status}
                           </span>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {application.languages.map((language, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                            >
-                              {language}
-                            </span>
-                          ))}
                         </div>
                         
                         <div className="flex space-x-2">
@@ -200,6 +223,7 @@ export const AdminDashboardPage: React.FC = () => {
                             size="sm"
                             variant="outline"
                             className="text-red-600 border-red-200 hover:bg-red-50 flex items-center gap-1"
+                            onClick={() => handleStatusUpdate(application.tutorProfile._id, 'rejected')}
                           >
                             <XCircle size={14} />
                             Reject
@@ -208,6 +232,7 @@ export const AdminDashboardPage: React.FC = () => {
                             size="sm"
                             variant="outline"
                             className="text-green-600 border-green-200 hover:bg-green-50 flex items-center gap-1"
+                            onClick={() => handleStatusUpdate(application.tutorProfile._id, 'approved')}
                           >
                             <CheckCircle size={14} />
                             Approve
@@ -215,7 +240,7 @@ export const AdminDashboardPage: React.FC = () => {
                           <Button
                             size="sm"
                             variant="default"
-                            onClick={() => window.location.href = `/tutor-applications/${application.id}`}
+                            onClick={() => handleReviewClick(application)}
                           >
                             Review
                           </Button>
@@ -326,6 +351,40 @@ export const AdminDashboardPage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      <Dialog open={!!selectedApplication} onOpenChange={handleCloseModal}>
+        <DialogContent className="max-w-[800px] h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Review Application</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-1">
+            {selectedApplication && (
+              <TutorProfileView 
+                tutorProfile={selectedApplication.tutorProfile}
+                firstName={selectedApplication.firstName}
+                lastName={selectedApplication.lastName}
+                email={selectedApplication.email}
+              />
+            )}
+          </div>
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              className="text-red-600 border-red-200 hover:bg-red-50"
+              onClick={() => selectedApplication && handleStatusUpdate(selectedApplication.tutorProfile._id, 'rejected')}
+            >
+              Reject
+            </Button>
+            <Button
+              variant="outline"
+              className="text-green-600 border-green-200 hover:bg-green-50"
+              onClick={() => selectedApplication && handleStatusUpdate(selectedApplication.tutorProfile._id, 'approved')}
+            >
+              Approve
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };

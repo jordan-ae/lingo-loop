@@ -9,7 +9,7 @@ interface TutorState {
   error: string | null;
   fetchTutors: () => Promise<void>;
   filterTutors: (filters: TutorFilters) => void;
-  getTutorById: (id: string) => Tutor | undefined;
+  getTutorById: (userId: string) => Promise<Tutor | undefined>;
   addFavoriteTutor: (tutorId: string, studentId: string) => Promise<boolean>;
   removeFavoriteTutor: (tutorId: string, studentId: string) => Promise<boolean>;
   submitTutorApplication: (application: TutorApplicationData) => Promise<boolean>;
@@ -33,6 +33,7 @@ export interface TutorApplicationData {
   videoLink: string;
   bio: string;
   languages: Language[];
+  catchPhrase: string;
 }
 
 // Mock data
@@ -211,8 +212,18 @@ export const useTutorStore = create<TutorState>((set, get) => ({
     set({ filteredTutors: filtered });
   },
   
-  getTutorById: (id) => {
-    return get().tutors.find(tutor => tutor.id === id);
+  getTutorById: async (userId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/tutors/user/${userId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch tutor');
+      }
+      const tutor = await response.json();
+      return tutor;
+    } catch (error) {
+      console.error('Error fetching tutor:', error);
+      return undefined;
+    }
   },
   
   addFavoriteTutor: async (tutorId, studentId) => {

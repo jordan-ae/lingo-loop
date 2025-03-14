@@ -14,6 +14,7 @@ export interface User {
 }
 
 export interface Tutor extends User {
+  [x: string]: any;
   languages: Language[];
   bio: string;
   videoIntroduction?: string;
@@ -23,6 +24,7 @@ export interface Tutor extends User {
   availability: TimeSlot[];
   country: string;
   timezone: string;
+  status: 'pending' | 'approved' | 'rejected'
 }
 
 export interface Student extends User {

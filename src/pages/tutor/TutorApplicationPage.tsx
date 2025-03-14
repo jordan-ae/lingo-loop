@@ -18,6 +18,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../../comp
 import { MainLayout } from '../../components/layout/MainLayout';
 import { Button } from '../../components/ui/button';
 import { useUserStore } from '@/store/userStore';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
 export const TutorApplicationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -30,7 +34,43 @@ export const TutorApplicationPage: React.FC = () => {
   
   const [isSubmitted, setIsSubmitted] = useState(false);
   
-  const { register, handleSubmit, formState: { errors } } = useForm<TutorApplicationData>();
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<TutorApplicationData>();
+  
+  const [teachingLanguage, setTeachingLanguage] = useState<string>('');
+  const [certificationExams, setCertificationExams] = useState<string[]>([]);
+  
+  // Language options (capped at 7)
+  const languageOptions = [
+    'English',
+    'Spanish',
+    'French',
+    'German',
+    'Chinese',
+    'Japanese',
+    'Italian'
+  ];
+  
+  // Certification exam options
+  const certificationOptions = [
+    'TOEFL',
+    'IELTS',
+    'DELE',
+    'DELF',
+    'HSK',
+    'JLPT',
+    'CELI'
+  ];
+  
+  // Add country options at the top of the component
+  const supportedCountries = [
+    { code: 'US', name: 'United States' },
+    { code: 'GB', name: 'United Kingdom' },
+    { code: 'IN', name: 'India' },
+    { code: 'CN', name: 'China' },
+    { code: 'FR', name: 'France' },
+    { code: 'DE', name: 'Germany' },
+    // Add more supported countries as needed
+  ];
   
   const handleAddLanguage = () => {
     setLanguages([...languages, { name: '', proficiency: 'intermediate' }]);
@@ -49,11 +89,22 @@ export const TutorApplicationPage: React.FC = () => {
     setLanguages(updatedLanguages);
   };
   
+  const handleCertificationChange = (selectedExams: string[]) => {
+    // Limit to 3 exams
+    if (selectedExams.length <= 3) {
+      setCertificationExams(selectedExams);
+    }
+  };
+
+  console.log(user, "sfafd")
+  
   const onSubmit = async (data: TutorApplicationData) => {
     const applicationData = {
       userId: user?.id,
       ...data,
-      languages
+      languages,
+      teachingLanguage,
+      certificationExams
     };
     
     const success = await submitTutorApplication(applicationData);
@@ -104,77 +155,127 @@ export const TutorApplicationPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex flex-col gap-1 w-full">
                   <label className="text-sm font-medium text-gray-700">Email Address</label>
-                  <div className="relative">
+                  <div className="relative w-full">
                     <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
+                    <Input
                       type="email"
-                      className="w-full pl-10 pr-3 py-2 rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="pl-10 w-full"
                       {...register('email', {
-                    required: 'Email is required',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Invalid email address'
-                    }
-                  })}
-                />
-              </div>
-              </div>
+                        required: 'Email is required',
+                        pattern: {
+                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                          message: 'Invalid email address'
+                        }
+                      })}
+                    />
+                  </div>
+                </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 w-full">
                   <label className="text-sm font-medium text-gray-700">Phone Number</label>
-                  <div className="relative">
+                  <div className="relative w-full">
                     <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      className="w-full pl-10 pr-3 py-2 rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                      {...register('phone', { required: 'Phone number is required' })}
+                    <Input
+                      className="pl-10 w-full"
+                      placeholder="+1 234-567-8901"
+                      {...register('phone', { 
+                        required: 'Phone number is required',
+                        validate: (value) => {
+                          const phoneNumber = parsePhoneNumberFromString(value);
+                          return phoneNumber?.isValid() || 'Invalid phone number';
+                        }
+                      })}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const phoneNumber = parsePhoneNumberFromString(value);
+                        if (phoneNumber) {
+                          e.target.value = phoneNumber.formatInternational();
+                        }
+                        register('phone').onChange(e);
+                      }}
                     />
                   </div>
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 w-full">
                   <label className="text-sm font-medium text-gray-700">Country</label>
-                  <div className="relative">
+                  <div className="relative w-full">
                     <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      className="w-full pl-10 pr-3 py-2 rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    <Select
+                      onValueChange={(value) => setValue('country', value)}
                       {...register('country', { required: 'Country is required' })}
-                    />
+                    >
+                      <SelectTrigger className="pl-10 w-full">
+                        <SelectValue placeholder="Select your country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {supportedCountries.map((country) => (
+                          <SelectItem key={country.code} value={country.code}>
+                            {country.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
-              
+             
               <div>
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-gray-700">Video Introduction Link (YouTube, Vimeo, etc.)</label>
                   <div className="relative">
-                    <FileVideo size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      className="w-full pl-10 pr-3 py-2 rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    <FileVideo size={18} className="absolute left-3 top-3 text-gray-400" />
+                    <Input
+                      className="pl-10"
                       placeholder="https://..."
                       {...register('videoLink', { 
-                    required: 'Video link is required',
-                    pattern: {
-                      value: /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be|vimeo\.com)\/.+/i,
-                      message: 'Please enter a valid YouTube or Vimeo link'
-                    }
-                  })}
-                />
-                <p className="mt-1 text-sm text-gray-500">Upload a 1-3 minute video introducing yourself and your teaching style</p>
+                        required: 'Video link is required',
+                        pattern: {
+                          value: /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be|vimeo\.com)\/.+/i,
+                          message: 'Please enter a valid YouTube or Vimeo link'
+                        }
+                      })}
+                    />
+                    <p className="mt-1 text-sm text-gray-500">Upload a 1-3 minute video introducing yourself and your teaching style</p>
+                  </div>
+                </div>
               </div>
+
+              
+              {/* Add Catch Phrase Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Catch Phrase
+                </label>
+                <div className="mt-1">
+                  <Input
+                    placeholder="Your unique teaching tagline (e.g., 'Making Spanish fun and easy!')"
+                    {...register('catchPhrase', {
+                      required: 'Catch phrase is required',
+                      maxLength: {
+                        value: 100,
+                        message: 'Catch phrase must be 100 characters or less'
+                      }
+                    })}
+                  />
+                  {errors.catchPhrase && (
+                    <p className="mt-1 text-sm text-red-600">{errors.catchPhrase.message}</p>
+                  )}
+                  <p className="mt-1 text-sm text-gray-500">A short phrase (at most 100 characters) that describes your teaching style</p>
+                </div>
               </div>
-              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Bio
                 </label>
                 <div className="mt-1">
-                  <textarea
+                  <Textarea
                     rows={4}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     placeholder="Tell us about yourself, your teaching experience, and your approach to language instruction..."
                     {...register('bio', { 
                       required: 'Bio is required',
@@ -188,8 +289,7 @@ export const TutorApplicationPage: React.FC = () => {
                     <p className="mt-1 text-sm text-red-600">{errors.bio.message}</p>
                   )}
                 </div>
-              </div>
-              
+              </div>             
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-sm font-medium text-gray-700">
@@ -209,29 +309,41 @@ export const TutorApplicationPage: React.FC = () => {
                 
                 <div className="space-y-3">
                   {languages.map((language, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <div className="flex-1">
-                        <input
-                          type="text"
+                    <div key={index} className="flex items-center gap-2 w-full">
+                      <div className='flex-1 w-full'>
+                        <Select
                           value={language.name}
-                          onChange={(e) => handleLanguageChange(index, 'name', e.target.value)}
-                          placeholder="Language name"
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          onValueChange={(value) => handleLanguageChange(index, 'name', value)}
                           required
-                        />
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select a language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {languageOptions.map((lang) => (
+                              <SelectItem key={lang} value={lang}>
+                                {lang}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       
-                      <div className="flex-1">
-                        <select
+                      <div className='flex-1 w-full'>
+                        <Select
                           value={language.proficiency}
-                          onChange={(e) => handleLanguageChange(index, 'proficiency', e.target.value as string)}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          onValueChange={(value) => handleLanguageChange(index, 'proficiency', value)}
                         >
-                          <option value="beginner">Beginner</option>
-                          <option value="intermediate">Intermediate</option>
-                          <option value="advanced">Advanced</option>
-                          <option value="native">Native</option>
-                        </select>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select proficiency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="beginner">Beginner</SelectItem>
+                            <SelectItem value="intermediate">Intermediate</SelectItem>
+                            <SelectItem value="advanced">Advanced</SelectItem>
+                            <SelectItem value="native">Native</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       
                       {languages.length > 1 && (
@@ -245,6 +357,61 @@ export const TutorApplicationPage: React.FC = () => {
                       )}
                     </div>
                   ))}
+                </div>
+              </div>       
+              <div className="space-y-6">
+                {/* Teaching Language Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Language You Want to Teach
+                  </label>
+                  <Select
+                    value={teachingLanguage}
+                    onValueChange={setTeachingLanguage}
+                    required
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {languageOptions.map((lang) => (
+                        <SelectItem key={lang} value={lang}>
+                          {lang}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Certification Exams Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Certification Exams You Can Teach (Max 3)
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {certificationOptions.map((exam) => (
+                      <div key={exam} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={exam}
+                          value={exam}
+                          checked={certificationExams.includes(exam)}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            handleCertificationChange(
+                              checked
+                                ? [...certificationExams, exam]
+                                : certificationExams.filter((e) => e !== exam)
+                            );
+                          }}
+                          disabled={certificationExams.length >= 3 && !certificationExams.includes(exam)}
+                        />
+                        <label htmlFor={exam} className="text-sm text-gray-700">
+                          {exam}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
               
